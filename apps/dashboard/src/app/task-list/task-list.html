@@ -1,7 +1,8 @@
 <div class="p-8 max-w-6xl mx-auto">
   <div class="flex justify-between items-center mb-8">
     <h1 class="text-3xl font-bold text-slate-900">Secure Task Manager</h1>
-    <button routerLink="/add-task" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">
+    <button routerLink="/add-task"
+      class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">
       + Create Task
     </button>
   </div>
@@ -28,8 +29,11 @@
               {{ task.status }}
             </span>
           </td>
-          <td class="px-6 py-4 text-right">
-            <button (click)="deleteTask(task.id)" class="text-red-400 hover:text-red-600 transition p-2">
+          <td class="px-6 py-4 text-right flex gap-3 justify-end">
+            <a [routerLink]="['/edit-task', task.id]" class="text-indigo-600 hover:underline">
+              Edit
+            </a>
+            <button (click)="deleteTask(task.id)" class="text-red-400 hover:text-red-600">
               Delete
             </button>
           </td>

@@ -1,19 +1,19 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { User, UserRole } from '@turbo-vets/data';
+import { UserRole } from '@turbo-vets/data';
 import { OrganizationEntity } from './organization.entity';
 
-@Entity()
-export class UserEntity implements User {
+@Entity('users')
+export class UserEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
   @Column({ unique: true })
   email!: string;
 
-  @Column({ select: false }) // Security: Don't return password in queries
+  @Column({ select: false }) // Password won't be sent in JSON by default
   password!: string;
 
-  @Column({ type: 'enum', enum: UserRole, default: UserRole.VIEWER })
+  @Column({ type: 'varchar' }) // Store 'Owner', 'Admin', or 'Viewer'
   role!: UserRole;
 
   @Column()

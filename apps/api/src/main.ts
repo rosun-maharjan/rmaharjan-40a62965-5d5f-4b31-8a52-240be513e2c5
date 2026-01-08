@@ -3,6 +3,12 @@
  * This is only a minimal backend to get started.
  */
 
+import * as crypto from 'crypto';
+
+if (typeof global.crypto === 'undefined') {
+  (global as any).crypto = crypto;
+}
+
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';

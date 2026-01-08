@@ -1,8 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
-import { Task, TaskStatus, TaskCategory } from '@turbo-vets/data';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import { OrganizationEntity } from './organization.entity';
+import { UserEntity } from './user.entity';
+import { TaskStatus, TaskCategory } from '@turbo-vets/data';
 
 @Entity('tasks')
-export class TaskEntity implements Task {
+export class TaskEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
@@ -12,17 +14,33 @@ export class TaskEntity implements Task {
   @Column({ type: 'text', nullable: true })
   description!: string;
 
-  @Column({ type: 'enum', enum: TaskStatus, default: TaskStatus.TODO })
+  // Specify the enum type and reference the enum object
+  @Column({
+    type: 'enum',
+    enum: TaskStatus,
+    default: TaskStatus.TODO
+  })
   status!: TaskStatus;
 
-  @Column({ type: 'enum', enum: TaskCategory, default: TaskCategory.WORK })
+  // Specify the enum type and reference the enum object
+  @Column({
+    type: 'enum',
+    enum: TaskCategory,
+    default: TaskCategory.WORK
+  })
   category!: TaskCategory;
 
   @Column()
   organizationId!: string;
 
+  @ManyToOne(() => OrganizationEntity)
+  organization!: OrganizationEntity;
+
   @Column()
   creatorId!: string;
+
+  @ManyToOne(() => UserEntity)
+  creator!: UserEntity;
 
   @CreateDateColumn()
   createdAt!: Date;

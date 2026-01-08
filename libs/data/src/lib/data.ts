@@ -38,3 +38,12 @@ export interface Task {
   creatorId: string;
   createdAt: Date;
 }
+
+export interface AuditLog {
+  id: string;
+  userId: string;
+  action: string;      // e.g., 'CREATE_TASK', 'UPDATE_TASK', 'DELETE_TASK'
+  resource: string;    // e.g., 'task-uuid-123'
+  details: string;     // e.g., 'Changed status to Done'
+  timestamp: Date;
+}
