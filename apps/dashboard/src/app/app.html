@@ -1,0 +1,16 @@
+<div class="p-8">
+  <h1 class="text-3xl font-bold text-blue-600 mb-6">TurboVets Staff</h1>
+  
+  <div class="grid gap-4">
+    <div *ngFor="let vet of vets" class="p-4 border rounded-lg shadow-sm bg-white">
+      <h2 class="font-bold text-lg">{{ vet.name }}</h2>
+      <p class="text-gray-600 italic">{{ vet.specialty }}</p>
+      <p class="text-sm text-blue-400">{{ vet.email }}</p>
+    </div>
+  </div>
+
+  <p *ngIf="vets.length === 0" class="text-gray-400 mt-4">
+    Loading vets or no vets found...
+  </p>
+</div>
+<!-- <router-outlet></router-outlet> -->

@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json", // Point to root, not ./tsconfig.json
+  "compilerOptions": {
+    "outDir": "../../dist/out-tsc",
+    "types": [],
+    "emitDeclarationOnly": false,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "lib": ["es2022", "dom"],
+    "module": "esnext",
+    "moduleResolution": "bundler"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts"],
+  "references": [
+    {
+      "path": "../../libs/data/tsconfig.lib.json"
+    }
+  ]
+}
