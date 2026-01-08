@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
-import { OrganizationEntity } from './organization.entity';
-import { UserEntity } from './user.entity';
-import { TaskStatus, TaskCategory } from '@turbo-vets/data';
+import { OrganizationEntity } from './organization.entity.js';
+import { UserEntity } from './user.entity.js';
+import { TaskStatus, TaskCategory } from '../data.js';
 
 @Entity('tasks')
 export class TaskEntity {

@@ -1,8 +1,10 @@
 <div class="p-8 max-w-6xl mx-auto">
   <div class="flex justify-between items-center mb-8">
     <h1 class="text-3xl font-bold text-slate-900">Secure Task Manager</h1>
-    <button routerLink="/add-task"
-      class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">
+    
+    <button *ngIf="user?.role !== 'Viewer'" 
+      routerLink="/add-task"
+      class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md">
       + Create Task
     </button>
   </div>
@@ -18,24 +20,43 @@
         </tr>
       </thead>
       <tbody class="divide-y divide-slate-100">
+        <tr *ngIf="tasks.length === 0">
+          <td colspan="4" class="px-6 py-12 text-center text-slate-400 italic">
+            No tasks found for your organization.
+          </td>
+        </tr>
+
         <tr *ngFor="let task of tasks" class="hover:bg-slate-50 transition">
           <td class="px-6 py-4">
             <div class="font-semibold text-slate-800">{{ task.title }}</div>
-            <div class="text-sm text-slate-500">{{ task.description }}</div>
+            <div class="text-sm text-slate-500 truncate max-w-xs">{{ task.description }}</div>
           </td>
-          <td class="px-6 py-4 text-sm text-slate-600">{{ task.category }}</td>
+          <td class="px-6 py-4 text-sm text-slate-600">
+            <span class="bg-slate-100 px-2 py-0.5 rounded text-xs font-medium">{{ task.category }}</span>
+          </td>
           <td class="px-6 py-4">
-            <span [className]="'px-3 py-1 rounded-full text-xs font-medium ' + getStatusClass(task.status)">
+            <span [className]="'px-3 py-1 rounded-full text-xs font-bold ' + getStatusClass(task.status)">
               {{ task.status }}
             </span>
           </td>
-          <td class="px-6 py-4 text-right flex gap-3 justify-end">
-            <a [routerLink]="['/edit-task', task.id]" class="text-indigo-600 hover:underline">
-              Edit
-            </a>
-            <button (click)="deleteTask(task.id)" class="text-red-400 hover:text-red-600">
-              Delete
-            </button>
+          <td class="px-6 py-4 text-right">
+            <div class="flex gap-4 justify-end items-center">
+              <a *ngIf="user?.role !== 'Viewer'" 
+                 [routerLink]="['/edit-task', task.id]" 
+                 class="text-indigo-600 hover:text-indigo-900 text-sm font-semibold">
+                Edit
+              </a>
+
+              <button *ngIf="user?.role === 'Owner'" 
+                (click)="deleteTask(task.id)" 
+                class="text-red-400 hover:text-red-600 text-sm font-semibold transition-colors">
+                Delete
+              </button>
+
+              <span *ngIf="user?.role === 'Viewer'" class="text-xs text-slate-400 italic">
+                Read-only
+              </span>
+            </div>
           </td>
         </tr>
       </tbody>

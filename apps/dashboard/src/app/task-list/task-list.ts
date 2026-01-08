@@ -13,8 +13,15 @@ import { Task, TaskStatus } from '@turbo-vets/data';
 export class TaskListComponent implements OnInit {
   private http = inject(HttpClient);
   tasks: Task[] = [];
+  
+  // 1. Add user property to track roles
+  user: any; 
 
   ngOnInit() {
+    // 2. Load user from storage
+    const userData = localStorage.getItem('user');
+    this.user = userData ? JSON.parse(userData) : null;
+    
     this.loadTasks();
   }
 
@@ -31,8 +38,17 @@ export class TaskListComponent implements OnInit {
   }
 
   deleteTask(id: string) {
-    if (confirm('Are you sure?')) {
-      this.http.delete(`/api/tasks/${id}`).subscribe(() => this.loadTasks());
+    // Only Owners should be able to trigger this based on our RBAC
+    if (this.user?.role !== 'Owner') {
+      alert('Only Owners can delete tasks.');
+      return;
+    }
+
+    if (confirm('Are you sure you want to delete this task? This action will be logged.')) {
+      this.http.delete(`/api/tasks/${id}`).subscribe({
+        next: () => this.loadTasks(),
+        error: (err) => console.error('Delete failed', err)
+      });
     }
   }
 }

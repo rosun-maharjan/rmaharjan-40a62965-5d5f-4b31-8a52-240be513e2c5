@@ -1,9 +1,22 @@
-import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, ForbiddenException } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { Task } from '@turbo-vets/data';
 import { AuditService } from './audit.service';
+import { AuthGuard } from '@nestjs/passport';
+// 1. Import your new RBAC tools
+import { RbacGuard, Roles, Role } from '@turbo-vets/auth';
+
+interface AuthenticatedRequest extends Request {
+  user: {
+    userId: string;
+    email: string;
+    role: Role; // Use the Enum here for better type checking
+    orgId: string;
+  };
+}
 
 @Controller('tasks')
+@UseGuards(AuthGuard('jwt'), RbacGuard) // 2. Add RbacGuard globally for this controller
 export class TasksController {
   constructor(
     private readonly tasksService: TasksService,
@@ -11,48 +24,45 @@ export class TasksController {
   ) {}
 
   @Get()
-  async getAll() {
-    // UPDATED: Use the UUID from your Seed Data for the Parent Org
-    const tempOrgId = 'd290f1ee-6c54-4b01-90e6-d701748f0851';
-    return this.tasksService.findAll(tempOrgId);
+  @Roles(Role.Viewer) // 3. Viewer is the minimum role (inherited by Admin/Owner)
+  async getAll(@Request() req: AuthenticatedRequest) {
+    return this.tasksService.findAll(req.user.orgId);
   }
 
   @Post()
-  async create(@Body() task: Partial<Task>) {
-    // UPDATED: Pass the placeholder User UUID and Org UUID
-    const tempUserId = '3f9a7171-460b-4566-9b57-61c1b849547d';
+  @Roles(Role.Admin) // 4. Only Admin and Owner can create
+  async create(@Request() req: AuthenticatedRequest, @Body() task: Partial<Task>) {
     const taskWithDefaults = {
       ...task,
-      creatorId: tempUserId,
-      organizationId: task.organizationId || 'd290f1ee-6c54-4b01-90e6-d701748f0851'
+      creatorId: req.user.userId,
+      organizationId: req.user.orgId
     };
-    return this.tasksService.create(taskWithDefaults, tempUserId);
+    return this.tasksService.create(taskWithDefaults, req.user.userId, req.user.orgId);
   }
 
   @Get(':id')
-  async getOne(@Param('id') id: string) {
-    return this.tasksService.findOne(id);
+  @Roles(Role.Viewer)
+  async getOne(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+    // 5. Enforce Org-level access by passing orgId to the service
+    return this.tasksService.findOne(id, req.user.orgId);
   }
 
   @Put(':id')
-  async update(@Param('id') id: string, @Body() data: Partial<Task>) {
-    // UPDATED: Use the specific User UUID from seed data
-    const tempUserId = '3f9a7171-460b-4566-9b57-61c1b849547d';
-    return this.tasksService.update(id, data, tempUserId);
+  @Roles(Role.Admin) // 6. Admin and Owner can edit
+  async update(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() data: Partial<Task>) {
+    return this.tasksService.update(id, data, req.user.userId, req.user.orgId);
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    const tempUserId = '3f9a7171-460b-4566-9b57-61c1b849547d';
-    
-    // Logic: Log the deletion before it happens
-    await this.auditService.log(tempUserId, 'DELETE_TASK', id, 'Task deleted via API');
-    
-    return this.tasksService.remove(id);
+  @Roles(Role.Owner) // 7. Only Owner can delete
+  async remove(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+    await this.auditService.log(req.user.userId, 'DELETE_TASK', id, 'Task deleted via API');
+    return this.tasksService.remove(id, req.user.orgId);
   }
 
-  @Get('audit-log/all') // Renamed slightly to avoid collision with :id route
-  async getAuditLogs() {
-    return this.auditService.getLogs();
+  @Get('audit-log/all')
+  @Roles(Role.Admin) // 8. Only Admin and Owner can see audit logs
+  async getAuditLogs(@Request() req: AuthenticatedRequest) {
+    return this.auditService.getLogsByOrg(req.user.orgId);
   }
 }

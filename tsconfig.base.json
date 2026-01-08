@@ -18,6 +18,8 @@
     "strict": true,
     "target": "es2022",
     "customConditions": ["@org/source"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "paths": {
       "@turbo-vets/data": ["libs/data/src/index.ts"],
       "@turbo-vets/auth": ["libs/auth/src/index.ts"]

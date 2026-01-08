@@ -1,19 +1,26 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtStrategy } from '@turbo-vets/auth'; // Library alias
+import { PassportModule } from '@nestjs/passport';
 
 // Entities
-import { TaskEntity } from './entities/task.entity';
-import { UserEntity } from './entities/user.entity';
-import { AuditLogEntity } from './entities/audit-log.entity';
-import { OrganizationEntity } from './entities/organization.entity';
+import { 
+  TaskEntity, 
+  UserEntity, 
+  OrganizationEntity, 
+  AuditLogEntity 
+} from '@turbo-vets/data';
 
 // Services & Controllers
 import { AppService } from './app.service';
 import { TasksService } from './tasks/tasks.service';
 import { AuditService } from './tasks/audit.service';
+import { AuthService } from '@turbo-vets/auth';
 import { AppController } from './app.controller';
 import { TasksController } from './tasks/tasks.controller';
+import { JwtModule } from '@nestjs/jwt';
+import { AuthController } from './auth/auth.controller';
 
 @Module({
   imports: [
@@ -21,6 +28,16 @@ import { TasksController } from './tasks/tasks.controller';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+    }),
+
+    JwtModule.registerAsync({
+      global: true, // This makes JwtService available to AuthService
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '1d' },
+      }),
     }),
 
     // 2. Use forRootAsync to inject the ConfigService
@@ -44,9 +61,10 @@ import { TasksController } from './tasks/tasks.controller';
       UserEntity, 
       OrganizationEntity, 
       AuditLogEntity
-    ])
+    ]),
+    PassportModule
   ],
-  controllers: [AppController, TasksController],
-  providers: [AppService, TasksService, AuditService],
+  controllers: [AppController, TasksController, AuthController],
+  providers: [AppService, TasksService, AuditService, AuthService, JwtStrategy],
 })
 export class AppModule {}

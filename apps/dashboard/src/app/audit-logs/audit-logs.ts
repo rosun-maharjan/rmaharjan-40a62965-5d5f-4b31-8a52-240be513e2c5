@@ -1,7 +1,18 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { AuditLog } from '@turbo-vets/data';
+
+// We extend the AuditLog type locally to include the user relation we added in NestJS
+interface AuditLogWithUser {
+  id: string;
+  action: string;
+  details: string;
+  timestamp: Date;
+  user: {
+    email: string;
+    role: string;
+  };
+}
 
 @Component({
   selector: 'app-audit-logs',
@@ -12,8 +23,7 @@ import { AuditLog } from '@turbo-vets/data';
 export class AuditLogsComponent implements OnInit {
   private http = inject(HttpClient);
   
-  // We initialize with an empty array
-  logs: AuditLog[] = [];
+  logs: AuditLogWithUser[] = [];
   isLoading = true;
 
   ngOnInit() {
@@ -22,8 +32,8 @@ export class AuditLogsComponent implements OnInit {
 
   fetchLogs() {
     this.isLoading = true;
-    // Note: We will implement this endpoint in the NestJS API next
-    this.http.get<AuditLog[]>('/api/tasks/audit-log/all').subscribe({
+    // Points to the endpoint we secured with @Roles(Role.Admin)
+    this.http.get<AuditLogWithUser[]>('/api/tasks/audit-log/all').subscribe({
       next: (data) => {
         this.logs = data;
         this.isLoading = false;

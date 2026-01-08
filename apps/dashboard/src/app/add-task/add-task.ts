@@ -18,19 +18,26 @@ export class AddTaskComponent {
 
   categories = Object.values(TaskCategory);
 
+  // REMOVED: organizationId and creatorId placeholders. 
+  // The backend handles these via the JWT token now.
   taskForm = this.fb.group({
     title: ['', [Validators.required, Validators.minLength(3)]],
     description: [''],
     category: [TaskCategory.WORK, Validators.required],
-    status: [TaskStatus.TODO],
-    organizationId: ['org-123'], // Placeholder until Auth is integrated
-    creatorId: ['user-123']      // Placeholder until Auth is integrated
+    status: [TaskStatus.TODO, Validators.required],
   });
 
   onSubmit() {
     if (this.taskForm.valid) {
-      this.http.post('/api/tasks', this.taskForm.value).subscribe(() => {
-        this.router.navigate(['/tasks']);
+      // The interceptor will automatically add 'Authorization: Bearer <token>'
+      this.http.post('/api/tasks', this.taskForm.value).subscribe({
+        next: () => {
+          this.router.navigate(['/tasks']);
+        },
+        error: (err) => {
+          console.error('Task creation failed:', err);
+          alert('Failed to create task. You may not have permission.');
+        }
       });
     }
   }

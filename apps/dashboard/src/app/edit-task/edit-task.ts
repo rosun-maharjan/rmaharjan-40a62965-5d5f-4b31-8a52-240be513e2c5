@@ -15,9 +15,10 @@ export class EditTaskComponent implements OnInit {
   private fb = inject(FormBuilder);
   private http = inject(HttpClient);
   private router = inject(Router);
-  private route = inject(ActivatedRoute); // Needed to read :id from URL
+  private route = inject(ActivatedRoute);
 
   taskId!: string;
+  isLoading = true; // Added for better UX
   categories = Object.values(TaskCategory);
   statuses = Object.values(TaskStatus);
 
@@ -29,21 +30,42 @@ export class EditTaskComponent implements OnInit {
   });
 
   ngOnInit() {
-    // 1. Pull the ID from the route param /edit-task/:id
     this.taskId = this.route.snapshot.params['id'];
-    
-    // 2. Load the data to fill the form
+    this.loadTask();
+  }
+
+  loadTask() {
+    this.isLoading = true;
     this.http.get<Task>(`/api/tasks/${this.taskId}`).subscribe({
-      next: (task) => this.taskForm.patchValue(task),
-      error: (err) => console.error('Could not load task', err)
+      next: (task) => {
+        // Use patchValue to fill only the fields that match form controls
+        this.taskForm.patchValue({
+          title: task.title,
+          description: task.description,
+          category: task.category,
+          status: task.status
+        });
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Could not load task', err);
+        // If 403 or 404, redirect back to list
+        this.router.navigate(['/tasks']);
+      }
     });
   }
 
   onSubmit() {
     if (this.taskForm.valid) {
+      // The interceptor automatically handles the JWT/Auth header
       this.http.put(`/api/tasks/${this.taskId}`, this.taskForm.value).subscribe({
-        next: () => this.router.navigate(['/tasks']), // Back to list on success
-        error: (err) => console.error('Update failed', err)
+        next: () => this.router.navigate(['/tasks']),
+        error: (err) => {
+          console.error('Update failed', err);
+          if (err.status === 403) {
+            alert('Permission Denied: Only Admins or Owners can edit tasks.');
+          }
+        }
       });
     }
   }
