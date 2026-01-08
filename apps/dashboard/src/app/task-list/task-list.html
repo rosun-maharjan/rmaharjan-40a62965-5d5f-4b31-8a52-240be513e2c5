@@ -1,65 +1,86 @@
-<div class="p-8 max-w-6xl mx-auto">
-  <div class="flex justify-between items-center mb-8">
-    <h1 class="text-3xl font-bold text-slate-900">Secure Task Manager</h1>
+<div class="p-6 max-w-7xl mx-auto min-h-screen bg-slate-50">
+  
+  <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-8 flex flex-col lg:flex-row lg:items-center gap-4">
     
-    <button *ngIf="user?.role !== 'Viewer'" 
-      routerLink="/add-task"
-      class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md">
-      + Create Task
+    <div class="relative flex-1">
+      <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      </span>
+      <input [(ngModel)]="searchTerm" (input)="applyFilters()" type="text" placeholder="Search task title or description..."
+             class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white sm:text-sm transition" />
+    </div>
+
+    <div class="flex items-center gap-2">
+      <label class="text-xs font-bold text-slate-400 uppercase whitespace-nowrap">Filter By:</label>
+      <select [(ngModel)]="selectedCategory" (change)="applyFilters()" 
+              class="px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition">
+        <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+      </select>
+    </div>
+
+    <button (click)="sortOrder = (sortOrder === 'asc' ? 'desc' : 'asc'); applyFilters()"
+            class="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium text-slate-600 transition min-w-[120px] justify-center">
+      <span>{{ sortOrder === 'asc' ? 'A to Z' : 'Z to A' }}</span>
+      <svg [class.rotate-180]="sortOrder === 'desc'" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
+      </svg>
+    </button>
+
+    <div class="hidden lg:block border-l border-slate-200 h-8"></div>
+
+    <button *ngIf="user?.role !== 'Viewer'" routerLink="/add-task"
+            class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md">
+      + New Task
     </button>
   </div>
 
-  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-    <table class="w-full text-left">
-      <thead class="bg-slate-50 border-b border-slate-200">
-        <tr>
-          <th class="px-6 py-4 text-xs font-bold uppercase text-slate-500">Task</th>
-          <th class="px-6 py-4 text-xs font-bold uppercase text-slate-500">Category</th>
-          <th class="px-6 py-4 text-xs font-bold uppercase text-slate-500">Status</th>
-          <th class="px-6 py-4 text-xs font-bold uppercase text-slate-500 text-right">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-        <tr *ngIf="tasks.length === 0">
-          <td colspan="4" class="px-6 py-12 text-center text-slate-400 italic">
-            No tasks found for your organization.
-          </td>
-        </tr>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6" cdkDropListGroup>
+    
+    <ng-container *ngFor="let col of [
+      { label: 'Todo', tasks: todo, id: 'Todo', color: 'bg-slate-300' },
+      { label: 'Doing', tasks: doing, id: 'Doing', color: 'bg-amber-400' },
+      { label: 'Done', tasks: done, id: 'Done', color: 'bg-emerald-500' }
+    ]">
+      <div class="flex flex-col h-full bg-slate-100 rounded-xl p-4 border border-slate-200">
+        <div class="flex items-center gap-2 mb-4">
+          <div [class]="'w-2 h-2 rounded-full ' + col.color"></div>
+          <h2 class="font-bold text-slate-700 uppercase text-xs tracking-wider">{{ col.label }}</h2>
+          <span class="ml-auto text-xs font-bold text-slate-400 bg-white px-2 py-0.5 rounded-full shadow-sm">
+            {{ col.tasks.length }}
+          </span>
+        </div>
 
-        <tr *ngFor="let task of tasks" class="hover:bg-slate-50 transition">
-          <td class="px-6 py-4">
-            <div class="font-semibold text-slate-800">{{ task.title }}</div>
-            <div class="text-sm text-slate-500 truncate max-w-xs">{{ task.description }}</div>
-          </td>
-          <td class="px-6 py-4 text-sm text-slate-600">
-            <span class="bg-slate-100 px-2 py-0.5 rounded text-xs font-medium">{{ task.category }}</span>
-          </td>
-          <td class="px-6 py-4">
-            <span [className]="'px-3 py-1 rounded-full text-xs font-bold ' + getStatusClass(task.status)">
-              {{ task.status }}
-            </span>
-          </td>
-          <td class="px-6 py-4 text-right">
-            <div class="flex gap-4 justify-end items-center">
-              <a *ngIf="user?.role !== 'Viewer'" 
-                 [routerLink]="['/edit-task', task.id]" 
-                 class="text-indigo-600 hover:text-indigo-900 text-sm font-semibold">
-                Edit
-              </a>
-
-              <button *ngIf="user?.role === 'Owner'" 
-                (click)="deleteTask(task.id)" 
-                class="text-red-400 hover:text-red-600 text-sm font-semibold transition-colors">
-                Delete
-              </button>
-
-              <span *ngIf="user?.role === 'Viewer'" class="text-xs text-slate-400 italic">
-                Read-only
-              </span>
+        <div cdkDropList [cdkDropListData]="col.tasks" (cdkDropListDropped)="drop($event, col.id)"
+             class="flex-1 min-h-[500px] space-y-3">
+          
+          <div *ngFor="let task of col.tasks; trackBy: trackByTaskId" cdkDrag
+               class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 cursor-move hover:shadow-md transition-all group">
+            
+            <div *cdkDragPreview class="bg-white p-4 rounded-lg shadow-xl border-2 border-indigo-500 w-64">
+              <div class="font-bold text-slate-800">{{ task.title }}</div>
             </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+
+            <div class="flex justify-between items-start mb-2">
+              <span class="text-[10px] font-bold uppercase tracking-tighter text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
+                {{ task.category }}
+              </span>
+              <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <a *ngIf="user?.role !== 'Viewer'" [routerLink]="['/edit-task', task.id]" class="text-slate-400 hover:text-indigo-600">
+                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                </a>
+                <button *ngIf="user?.role === 'Owner'" (click)="deleteTask(task.id)" class="text-slate-400 hover:text-red-600">
+                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <h3 class="font-bold text-slate-800 text-sm mb-1">{{ task.title }}</h3>
+            <p class="text-xs text-slate-500 line-clamp-2">{{ task.description }}</p>
+
+            <div *cdkDragPlaceholder class="bg-slate-200 border-2 border-dashed border-slate-300 rounded-lg h-24 w-full"></div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
   </div>
 </div>

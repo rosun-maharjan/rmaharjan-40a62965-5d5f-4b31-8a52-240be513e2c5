@@ -3,13 +3,27 @@
   
   <div class="flex gap-6 flex-1">
     <a routerLink="/tasks" routerLinkActive="text-indigo-400" class="hover:text-indigo-400 transition-colors">Tasks</a>
-    <a routerLink="/audit-logs" routerLinkActive="text-indigo-400" class="hover:text-indigo-400 transition-colors">Audit Logs</a>
+    <a *ngIf="user.role !== 'Viewer'" 
+       routerLink="/audit-logs" 
+       routerLinkActive="text-indigo-400" 
+       class="hover:text-indigo-400 transition-colors">Audit Logs</a>
   </div>
 
   <div class="flex items-center gap-6 border-l border-slate-700 pl-6">
-    <div class="text-right hidden sm:block">
-      <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Authenticated As</p>
-      <p class="text-sm font-medium">{{ user.email }}</p>
+    <div class="text-right hidden sm:flex flex-col items-end">
+      <p class="text-[10px] uppercase tracking-wider text-slate-400 font-bold mb-0.5">Authenticated As</p>
+      
+      <div class="flex items-center gap-2">
+        <p class="text-sm font-medium">{{ user.email }}</p>
+        
+        <span [ngClass]="{
+          'bg-indigo-500/20 text-indigo-300 border-indigo-500/30': user.role === 'Owner',
+          'bg-emerald-500/20 text-emerald-300 border-emerald-500/30': user.role === 'Admin',
+          'bg-slate-600 text-slate-300 border-slate-500/30': user.role === 'Viewer'
+        }" class="text-[10px] px-2 py-0.5 rounded border font-bold uppercase tracking-tighter">
+          {{ user.role }}
+        </span>
+      </div>
     </div>
 
     <button (click)="logout()" 
