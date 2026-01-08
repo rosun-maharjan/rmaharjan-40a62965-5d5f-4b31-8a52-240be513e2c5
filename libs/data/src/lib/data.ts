@@ -1,52 +1,40 @@
 export enum UserRole {
-  OWNER = 'OWNER',
-  ADMIN = 'ADMIN',
-  VIEWER = 'VIEWER'
+  OWNER = 'Owner',
+  ADMIN = 'Admin',
+  VIEWER = 'Viewer'
+}
+
+export enum TaskStatus {
+  TODO = 'Todo',
+  DOING = 'Doing',
+  DONE = 'Done'
+}
+
+export enum TaskCategory {
+  WORK = 'Work',
+  PERSONAL = 'Personal'
 }
 
 export interface User {
   id: string;
   email: string;
   role: UserRole;
-  orgId: string;
+  organizationId: string;
 }
 
 export interface Organization {
   id: string;
   name: string;
-  parentOrgId?: string; 
+  parentId?: string; // For 2-level hierarchy
 }
 
 export interface Task {
   id: string;
   title: string;
   description: string;
-  status: 'TODO' | 'IN_PROGRESS' | 'DONE';
-  orgId: string;
+  status: TaskStatus;
+  category: TaskCategory;
+  organizationId: string;
   creatorId: string;
-}
-
-export interface Vet {
-  id: string;
-  name: string;
-  specialty: string;
-  email: string;
-}
-
-export enum PetSpecies {
-  Dog = 'Dog',
-  Cat = 'Cat',
-  Bird = 'Bird',
-  Rabbit = 'Rabbit',
-  Other = 'Other'
-}
-
-export interface Pet {
-  id: string;
-  name: string;
-  species: PetSpecies;
-  breed: string;
-  age: number;
-  ownerName: string;
-  lastVisit?: string; // Using string for ISO dates is often easier for JSON
+  createdAt: Date;
 }

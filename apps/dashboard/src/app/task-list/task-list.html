@@ -1,0 +1,40 @@
+<div class="p-8 max-w-6xl mx-auto">
+  <div class="flex justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold text-slate-900">Secure Task Manager</h1>
+    <button routerLink="/add-task" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">
+      + Create Task
+    </button>
+  </div>
+
+  <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <table class="w-full text-left">
+      <thead class="bg-slate-50 border-b border-slate-200">
+        <tr>
+          <th class="px-6 py-4 text-xs font-bold uppercase text-slate-500">Task</th>
+          <th class="px-6 py-4 text-xs font-bold uppercase text-slate-500">Category</th>
+          <th class="px-6 py-4 text-xs font-bold uppercase text-slate-500">Status</th>
+          <th class="px-6 py-4 text-xs font-bold uppercase text-slate-500 text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        <tr *ngFor="let task of tasks" class="hover:bg-slate-50 transition">
+          <td class="px-6 py-4">
+            <div class="font-semibold text-slate-800">{{ task.title }}</div>
+            <div class="text-sm text-slate-500">{{ task.description }}</div>
+          </td>
+          <td class="px-6 py-4 text-sm text-slate-600">{{ task.category }}</td>
+          <td class="px-6 py-4">
+            <span [className]="'px-3 py-1 rounded-full text-xs font-medium ' + getStatusClass(task.status)">
+              {{ task.status }}
+            </span>
+          </td>
+          <td class="px-6 py-4 text-right">
+            <button (click)="deleteTask(task.id)" class="text-red-400 hover:text-red-600 transition p-2">
+              Delete
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
