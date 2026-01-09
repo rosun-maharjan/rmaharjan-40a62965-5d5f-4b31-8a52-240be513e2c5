@@ -16,12 +16,36 @@ export class TasksService {
   /**
    * Scoped to Organization: Only returns tasks belonging to the user's org.
    */
-  async findAll(orgId: string): Promise<Task[]> {
-    return this.taskRepo.find({ 
-      where: { organization: { id: orgId } },
-      order: { createdAt: 'DESC' }
-    });
-  }
+  async findAll(
+      orgId: string, 
+      filters: { search?: string, category?: string, sort?: 'ASC' | 'DESC' }
+    ): Promise<Task[]> {
+      const { search, category, sort } = filters;
+
+      // Start building the query scoped to the organization
+      const query = this.taskRepo.createQueryBuilder('task')
+        .where('task.organizationId = :orgId', { orgId });
+
+      // 1. Category Filter (Ignore if 'All')
+      if (category && category !== 'All') {
+        query.andWhere('task.category = :category', { category });
+      }
+
+      // 2. Search Filter (Title OR Description)
+      if (search) {
+        // We use ILike for PostgreSQL (case-insensitive) 
+        // Use %search% to match anywhere in the string
+        query.andWhere(
+          '(task.title ILike :searchTerm OR task.description ILike :searchTerm)',
+          { searchTerm: `%${search}%` }
+        );
+      }
+
+      // 3. Sorting (Requirement: Alphabetical by Title)
+      query.orderBy('task.title', sort || 'ASC');
+
+      return query.getMany();
+    }
 
   /**
    * Includes orgId and creatorId to maintain data integrity.

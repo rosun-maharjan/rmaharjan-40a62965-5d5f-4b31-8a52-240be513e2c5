@@ -2,7 +2,6 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 
-// We extend the AuditLog type locally to include the user relation we added in NestJS
 interface AuditLogWithUser {
   id: string;
   action: string;
@@ -32,15 +31,18 @@ export class AuditLogsComponent implements OnInit {
 
   fetchLogs() {
     this.isLoading = true;
-    // Points to the endpoint we secured with @Roles(Role.Admin)
     this.http.get<AuditLogWithUser[]>('/api/tasks/audit-log/all').subscribe({
       next: (data) => {
-        this.logs = data;
+        // Sort logs so that newest entries appear at the top
+        this.logs = data.sort((a, b) => 
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
         this.isLoading = false;
       },
       error: (err) => {
         console.error('Failed to load audit logs:', err);
         this.isLoading = false;
+        // Optional: Add a redirect if 403 (unauthorized) occurs
       }
     });
   }

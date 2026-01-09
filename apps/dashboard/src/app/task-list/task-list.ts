@@ -1,10 +1,11 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, HostListener, ViewChild, ElementRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
-import { RouterModule } from '@angular/router';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Router, RouterModule } from '@angular/router';
 import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 import { Task, TaskStatus, TaskCategory } from '@turbo-vets/data';
 import { FormsModule } from '@angular/forms';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-task-list',
@@ -12,60 +13,89 @@ import { FormsModule } from '@angular/forms';
   imports: [CommonModule, RouterModule, DragDropModule, FormsModule],
   templateUrl: './task-list.html',
 })
-export class TaskListComponent implements OnInit {
+export class TaskListComponent implements OnInit, OnDestroy {
   private http = inject(HttpClient);
-  
-  // Data source of truth
-  private allTasks: Task[] = [];
-  
+  private router = inject(Router);
+  private destroy$ = new Subject<void>();
+  private searchSubject = new Subject<string>();
+
+  @ViewChild('searchInput') searchInput!: ElementRef;
+
   // Kanban Columns
   todo: Task[] = [];
   doing: Task[] = [];
   done: Task[] = [];
+  
+  // Total count for progress bar (Fetched from API results)
+  totalTasksCount = 0;
   
   // UI State / Filters
   user: any;
   searchTerm: string = '';
   selectedCategory: string = 'All';
   sortOrder: 'asc' | 'desc' = 'asc';
-  
   categories = ['All', ...Object.values(TaskCategory)];
+
+  @HostListener('window:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent) {
+    if (event.key === '/' && event.target instanceof HTMLBodyElement) {
+      event.preventDefault();
+      this.searchInput.nativeElement.focus();
+    }
+    if (event.key === 'n' && event.target instanceof HTMLBodyElement) {
+      if (this.user?.role !== 'Viewer') this.router.navigate(['/add-task']);
+    }
+    if (event.key === 'Escape') {
+      this.searchTerm = '';
+      this.applyFilters();
+      (event.target as HTMLElement).blur();
+    }
+  }
 
   ngOnInit() {
     const userData = localStorage.getItem('user');
     this.user = userData ? JSON.parse(userData) : null;
+
+    // Set up Search Debouncing (Wait 300ms after user stops typing)
+    this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(() => this.loadTasks());
+
     this.loadTasks();
   }
 
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   loadTasks() {
-    this.http.get<Task[]>('/api/tasks').subscribe((data) => {
-      this.allTasks = data;
-      this.applyFilters();
+    // Build query parameters for the database
+    let params = new HttpParams()
+      .set('sort', this.sortOrder.toUpperCase())
+      .set('category', this.selectedCategory);
+
+    if (this.searchTerm) {
+      params = params.set('search', this.searchTerm);
+    }
+
+    this.http.get<Task[]>('/api/tasks', { params }).subscribe((data) => {
+      this.totalTasksCount = data.length;
+      // Distribute database-filtered results into columns
+      this.todo = data.filter(t => t.status === TaskStatus.TODO);
+      this.doing = data.filter(t => t.status === TaskStatus.DOING);
+      this.done = data.filter(t => t.status === TaskStatus.DONE);
     });
   }
 
-  /**
-   * Combined Logic: Category + Search + Sort
-   */
+  onSearchChange() {
+    this.searchSubject.next(this.searchTerm);
+  }
+
   applyFilters() {
-    // 1. Filter
-    let filtered = this.allTasks.filter(task => {
-      const matchesCategory = this.selectedCategory === 'All' || task.category === this.selectedCategory;
-      const matchesSearch = task.title.toLowerCase().includes(this.searchTerm.toLowerCase()) || 
-                            (task.description?.toLowerCase().includes(this.searchTerm.toLowerCase()) ?? false);
-      return matchesCategory && matchesSearch;
-    });
-
-    // 2. Sort
-    filtered = filtered.sort((a, b) => {
-      const res = a.title.localeCompare(b.title);
-      return this.sortOrder === 'asc' ? res : -res;
-    });
-
-    // 3. Partition into Status Columns
-    this.todo = filtered.filter(t => t.status === TaskStatus.TODO);
-    this.doing = filtered.filter(t => t.status === TaskStatus.DOING);
-    this.done = filtered.filter(t => t.status === TaskStatus.DONE);
+    this.loadTasks();
   }
 
   drop(event: CdkDragDrop<Task[]>, newStatus: string) {
@@ -73,8 +103,6 @@ export class TaskListComponent implements OnInit {
       moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
     } else {
       const task = event.previousContainer.data[event.previousIndex];
-      
-      // Update local object immediately for smooth UI
       task.status = newStatus as TaskStatus;
 
       transferArrayItem(
@@ -84,17 +112,12 @@ export class TaskListComponent implements OnInit {
         event.currentIndex
       );
       
-      // Delay API call to let CDK animations finish (prevents 'toLowerCase' crash)
       window.requestAnimationFrame(() => {
-        this.updateTaskStatus(task.id, task.status);
+        this.http.put(`/api/tasks/${task.id}`, { status: task.status }).subscribe({
+          error: () => this.loadTasks()
+        });
       });
     }
-  }
-
-  updateTaskStatus(id: string, status: TaskStatus) {
-    this.http.put(`/api/tasks/${id}`, { status }).subscribe({
-      error: () => this.loadTasks() // Revert UI if update fails
-    });
   }
 
   deleteTask(id: string) {
@@ -103,7 +126,10 @@ export class TaskListComponent implements OnInit {
     }
   }
 
-  trackByTaskId(index: number, task: Task) {
-    return task.id;
+  trackByTaskId(index: number, task: Task) { return task.id; }
+
+  get completionPercentage(): number {
+    if (this.totalTasksCount === 0) return 0;
+    return Math.round((this.done.length / this.totalTasksCount) * 100);
   }
 }

@@ -1,6 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
+import { ThemeService } from './theme.service';
 
 @Component({
   standalone: true,
@@ -10,6 +11,8 @@ import { Router, RouterModule } from '@angular/router';
   styleUrl: './app.scss',
 })
 export class App implements OnInit {
+  public themeService = inject(ThemeService);
+  
   ngOnInit() {
   }
 

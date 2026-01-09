@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, ForbiddenException, Query } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { Task } from '@turbo-vets/data';
 import { AuditService } from './audit.service';
@@ -24,9 +24,14 @@ export class TasksController {
   ) {}
 
   @Get()
-  @Roles(Role.Viewer) // 3. Viewer is the minimum role (inherited by Admin/Owner)
-  async getAll(@Request() req: AuthenticatedRequest) {
-    return this.tasksService.findAll(req.user.orgId);
+  @Roles(Role.Viewer)
+  async getAll(
+    @Request() req: AuthenticatedRequest,
+    @Query('search') search?: string,
+    @Query('category') category?: string,
+    @Query('sort') sort: 'ASC' | 'DESC' = 'DESC'
+  ) {
+    return this.tasksService.findAll(req.user.orgId, { search, category, sort });
   }
 
   @Post()
