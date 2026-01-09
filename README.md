@@ -1,6 +1,6 @@
 # TurboVets Secure Task Management Portal
 
-A professional-grade, full-stack task management system built with **NestJS**, **Angular**, and the **Nx Monorepo** build system. This project demonstrates high-security standards including **Hierarchical Role-Based Access Control (RBAC)**, **multi-tenant data isolation**, and a reactive, high-performance UI.
+A professional-grade, full-stack task management system built with **NestJS**, **Angular**, and the **Nx Monorepo** build system. This project demonstrates high-security standards including **Hierarchical Role-Based Access Control (RBAC)**, **multi-tenant data isolation**, and a reactive, high-performance UI. For **seed data** use **seed-data.sql** which is provided in the root directory with default password **password123**.
 
 ---
 
