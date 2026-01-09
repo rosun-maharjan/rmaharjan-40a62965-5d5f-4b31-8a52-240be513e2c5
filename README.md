@@ -1,104 +1,208 @@
-# New Nx Repository
+# TurboVets Secure Task Management Portal
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+A professional-grade, full-stack task management system built with **NestJS**, **Angular**, and the **Nx Monorepo** build system. This project demonstrates high-security standards including **Hierarchical Role-Based Access Control (RBAC)**, **multi-tenant data isolation**, and a reactive, high-performance UI.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+---
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/js?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+## 🚀 Setup Instructions
 
-## Generate a library
+### 1. Prerequisites
+- Node.js (v18+)
+- npm or yarn
 
-```sh
-npx nx g @nx/js:lib packages/pkg1 --publishable --importPath=@my-org/pkg1
+### 2. Environment Setup
+
+Create a `.env` file in the project root:
+
+```env
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=roshan
+DB_PASSWORD=roshan
+DB_DATABASE=TurboVets
+
+# Security
+JWT_SECRET=TurboVetsSecretKey
 ```
 
-## Run tasks
+### 3. Installation & Execution
 
-To build the library use:
+```bash
+# Install dependencies
+npm install
 
-```sh
-npx nx build pkg1
+# Run Backend (NestJS API)
+npx nx serve api
+
+# Run Frontend (Angular Dashboard)
+npx nx serve dashboard
 ```
 
-To run any task with Nx use:
+---
 
-```sh
-npx nx <target> <project-name>
+## 🏗 Architecture Overview
+
+### Nx Monorepo Layout
+
+This project uses an **Nx Monorepo** to maintain clear separation of concerns while enabling shared logic across the stack.
+
+**Applications**
+- `apps/api` — NestJS backend handling business logic, authentication, and security
+- `apps/dashboard` — Angular 17+ standalone frontend application
+
+**Shared Libraries**
+- `libs/data` — Shared TypeScript interfaces, enums, and TypeORM entities
+- `libs/auth` — Shared JWT utilities and RBAC guards
+
+**Rationale**  
+This structure minimizes code duplication (for example, shared `TaskStatus` enums between frontend and backend) and enables atomic, full-stack commits.
+
+---
+
+## 📊 Data Model Explanation
+
+The schema is implemented using **TypeORM** with a focus on performance and secure data isolation.
+
+### Schema Highlights
+
+![ER Diagram](./ER-Diagram.jpg)
+
+**Organization**
+- Root tenant entity
+- All data is scoped by organization
+
+**User**
+- Stores credentials and assigned role (`Owner`, `Admin`, `Viewer`)
+
+**Task**
+- Core domain resource
+- Indexed by `organizationId` and `title` for fast scoped queries
+
+**AuditLog**
+- Append-only, read-only table
+- Captures all destructive actions (`Create`, `Update`, `Delete`) for compliance
+
+---
+
+## 🔐 Access Control Implementation
+
+### Hierarchical RBAC & Multi-Tenancy
+
+Permissions flow downward through roles:
+
+**Owner**
+- Full administrative access
+- Can delete tasks and view organization-wide audit logs
+
+**Admin**
+- Can create and update tasks
+- Can view audit logs
+- Cannot delete records
+
+**Viewer**
+- Read-only access to tasks and dashboard visualizations
+
+### JWT Integration
+
+**Authentication**
+- JWT issued on login containing `userId`, `orgId`, and `role`
+
+**Authorization**
+- Requests pass through a NestJS `AuthGuard` and custom `RbacGuard`
+
+**Data Scoping**
+- `orgId` from the JWT payload is injected into every query
+- Guarantees strict organization-level data isolation
+
+---
+
+## 🔌 API Documentation
+
+### Task Endpoints
+
+#### GET `/api/tasks`
+**Filters**
+- `search` (title or description)
+- `category`
+- `sort` (`ASC` / `DESC`)
+
+**Sample Response**
+```json
+[
+  {
+    "id": "uuid",
+    "title": "Implement JWT",
+    "status": "Todo",
+    "category": "Work"
+  }
+]
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+---
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+#### POST `/api/tasks`
+**Role Required:** `Admin`, `Owner`
 
-## Versioning and releasing
-
-To version and release the library use
-
-```
-npx nx release
-```
-
-Pass `--dry-run` to see what would happen without actually releasing the library.
-
-[Learn more about Nx release &raquo;](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Keep TypeScript project references up to date
-
-Nx automatically updates TypeScript [project references](https://www.typescriptlang.org/docs/handbook/project-references.html) in `tsconfig.json` files to ensure they remain accurate based on your project dependencies (`import` or `require` statements). This sync is automatically done when running tasks such as `build` or `typecheck`, which require updated references to function correctly.
-
-To manually trigger the process to sync the project graph dependencies information to the TypeScript project references, run the following command:
-
-```sh
-npx nx sync
+**Body**
+```json
+{
+  "title": "New Task",
+  "category": "Work"
+}
 ```
 
-You can enforce that the TypeScript project references are always in the correct state when running in CI by adding a step to your CI job configuration that runs the following command:
+---
 
-```sh
-npx nx sync:check
+#### PUT `/api/tasks/:id`
+**Role Required:** `Admin`, `Owner`
+
+**Body**
+```json
+{
+  "status": "Doing"
+}
 ```
 
-[Learn more about nx sync](https://nx.dev/reference/nx-commands#sync)
+---
 
-## Nx Cloud
+#### DELETE `/api/tasks/:id`
+**Role Required:** `Owner`
 
-Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
+---
 
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### Audit Log Endpoints
 
-### Set up CI (non-Github Actions CI)
+#### GET `/api/tasks/audit-log/all`
+**Role Required:** `Admin`, `Owner`
 
-**Note:** This is only required if your CI provider is not GitHub Actions.
+**Description**  
+Returns a chronological list of all security-relevant events within the organization.
 
-Use the following command to configure a CI workflow for your workspace:
+---
 
-```sh
-npx nx g ci-workflow
-```
+## 🛠 Future Considerations
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+To evolve this project from a professional prototype to a production-ready enterprise platform:
 
-## Install Nx Console
+### Advanced Security
+- **Refresh Tokens**
+  - Short-lived access token
+  - Long-lived refresh token stored in an HttpOnly cookie
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+- **CSRF Protection**
+  - Synchronizer Token Pattern for state-changing requests
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### Performance & Scaling
+- **RBAC Caching**
+  - Cache roles and permissions in Redis to reduce database lookups
 
-## Useful links
+- **Database Partitioning**
+  - Partition the `Task` table by `organizationId` as data scales
 
-Learn more:
+### Feature Enhancements
+- **Role Delegation**
+  - Allow Owners to define custom permission sets
 
-- [Learn more about this workspace setup](https://nx.dev/nx-api/js?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- **Real-Time Collaboration**
+  - WebSocket integration (Socket.io) for live Kanban updates
